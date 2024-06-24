@@ -5,6 +5,7 @@ import (
 	"errors"
 	"image"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -109,7 +110,17 @@ func getImageDelta(html string) (image.Image, error) {
 	delta := html[index+len(start):]
 	delta = delta[:strings.Index(delta, "</div>")]
 
-	context := getImageContext(delta, "roboto", 26, 1, 1, 1)
+	change, _ := strconv.ParseFloat(delta, 64)
+	change = math.Abs(change)
+	red := 1.0
+	green := 1.0
+	blue := 1.0
+	if change >= 0.5 {
+		green = 0
+		blue = 0
+	}
+
+	context := getImageContext(delta, "roboto", 26, red, green, blue)
 	buf := new(bytes.Buffer)
 	context.EncodePNG(buf)
 	deltaImage, _, err := image.Decode(buf)
@@ -181,8 +192,8 @@ func getImageValue(html string) (image.Image, error) {
 		notify.Warning("ALERT!", "HIGH GLUCOSE")
 	}
 
-	green := 1.0
 	red := 0.0
+	green := 1.0
 	blue := 0.0
 	if floatValue < lowRangeLevel || floatValue >= highRangeLevel {
 		green = 0
