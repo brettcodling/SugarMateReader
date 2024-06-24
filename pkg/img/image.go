@@ -18,6 +18,8 @@ var (
 	dir            string
 	lowAlertLevel  float64
 	highAlertLevel float64
+	lowRangeLevel  float64
+	highRangeLevel float64
 )
 
 func init() {
@@ -31,6 +33,18 @@ func init() {
 	highAlertString := os.Getenv("HIGH_ALERT")
 	if highAlertString != "" {
 		highAlertLevel, _ = strconv.ParseFloat(highAlertString, 64)
+	}
+	lowRangeString := os.Getenv("LOW_RANGE")
+	if lowRangeString != "" {
+		lowRangeLevel, _ = strconv.ParseFloat(lowRangeString, 64)
+	} else {
+		lowRangeLevel = 4
+	}
+	highRangeString := os.Getenv("HIGH_RANGE")
+	if highRangeString != "" {
+		highRangeLevel, _ = strconv.ParseFloat(highRangeString, 64)
+	} else {
+		highRangeLevel = 10
 	}
 }
 
@@ -66,11 +80,11 @@ func BuildImage(html string) []byte {
 	return buf.Bytes()
 }
 
-func getImageContext(value, font string, fontSize float64) *gg.Context {
+func getImageContext(value, font string, fontSize, red, green, blue float64) *gg.Context {
 	context := gg.NewContext(80, 50)
 	context.SetRGBA(0, 0, 0, 0)
 	context.Clear()
-	context.SetRGB(1, 1, 1)
+	context.SetRGB(red, green, blue)
 	if fontSize == 0 {
 		fontSize = 32
 	}
@@ -95,7 +109,7 @@ func getImageDelta(html string) (image.Image, error) {
 	delta := html[index+len(start):]
 	delta = delta[:strings.Index(delta, "</div>")]
 
-	context := getImageContext(delta, "roboto", 26)
+	context := getImageContext(delta, "roboto", 26, 1, 1, 1)
 	buf := new(bytes.Buffer)
 	context.EncodePNG(buf)
 	deltaImage, _, err := image.Decode(buf)
@@ -137,7 +151,7 @@ func getImageTrend(html string) (image.Image, error) {
 		trend = "..."
 	}
 
-	context := getImageContext(trend, "noto", 32)
+	context := getImageContext(trend, "noto", 32, 1, 1, 1)
 	buf := new(bytes.Buffer)
 	context.EncodePNG(buf)
 	trendImage, _, err := image.Decode(buf)
@@ -167,7 +181,15 @@ func getImageValue(html string) (image.Image, error) {
 		notify.Warning("ALERT!", "HIGH GLUCOSE")
 	}
 
-	context := getImageContext(value, "roboto", 32)
+	green := 1.0
+	red := 0.0
+	blue := 0.0
+	if floatValue < lowRangeLevel || floatValue >= highRangeLevel {
+		green = 0
+		red = 1
+	}
+
+	context := getImageContext(value, "roboto", 32, red, green, blue)
 	buf := new(bytes.Buffer)
 	context.EncodePNG(buf)
 	valueImage, _, err := image.Decode(buf)
