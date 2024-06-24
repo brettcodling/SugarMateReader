@@ -11,6 +11,7 @@ import (
 	"github.com/brettcodling/SugarMateReader/pkg/img"
 	"github.com/brettcodling/SugarMateReader/pkg/notify"
 	"github.com/brettcodling/SugarMateReader/pkg/systray"
+	"github.com/pkg/browser"
 )
 
 func main() {
@@ -21,10 +22,17 @@ func main() {
 	log.SetOutput(syslog)
 
 	systray.Run(func() {
+		refresh := systray.AddMenuItem("Refresh", "")
+		goToUrl := systray.AddMenuItem("Go To Nightstand", "")
+		systray.AddSeparator()
 		quit := systray.AddMenuItem("Quit", "")
 		go func() {
 			for {
 				select {
+				case <-refresh.ClickedCh:
+					getReading(true)
+				case <-goToUrl.ClickedCh:
+					browser.OpenURL("https://sugarmate.io/nightstand")
 				case <-quit.ClickedCh:
 					systray.Quit()
 				}
