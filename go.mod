@@ -8,5 +8,5 @@ require (
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	golang.org/x/image v0.17.0 // indirect
-	golang.org/x/sys v0.21.0
+	golang.org/x/sys v0.21.0 // indirect
 )
