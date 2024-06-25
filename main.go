@@ -1,15 +1,11 @@
 package main
 
 import (
-	"io"
 	"log"
 	"log/syslog"
-	"net/http"
 	"time"
 
-	"github.com/brettcodling/SugarMateReader/pkg/auth"
-	"github.com/brettcodling/SugarMateReader/pkg/img"
-	"github.com/brettcodling/SugarMateReader/pkg/notify"
+	"github.com/brettcodling/SugarMateReader/pkg/readings"
 	"github.com/brettcodling/SugarMateReader/pkg/systray"
 	"github.com/pkg/browser"
 )
@@ -30,7 +26,7 @@ func main() {
 			for {
 				select {
 				case <-refresh.ClickedCh:
-					getReading(true)
+					setIcon()
 				case <-goToUrl.ClickedCh:
 					browser.OpenURL("https://sugarmate.io/nightstand")
 				case <-quit.ClickedCh:
@@ -38,55 +34,21 @@ func main() {
 				}
 			}
 		}()
-		getReading(true)
+		setIcon()
 		tick := time.Tick(1 * time.Minute)
 		for {
 			select {
 			case <-tick:
-				getReading(true)
+				setIcon()
 			}
 		}
 	}, func() {})
 }
 
-func getReading(retry bool) {
-	req, err := http.NewRequest(http.MethodGet, "https://sugarmate.io/nightstand", nil)
-	if err != nil {
-		notify.Warning("ERROR!", err.Error())
-		log.Println("error:")
-		log.Println(err)
-
-		return
+// setIcon sets the systray icon to the reading image.
+func setIcon() {
+	reading := readings.GetReading(true)
+	if len(reading) > 0 {
+		systray.SetIcon(reading)
 	}
-	req.AddCookie(&http.Cookie{
-		Name:  "auth_token",
-		Value: auth.Token.AccessToken,
-	})
-	transport := &http.Transport{}
-	resp, err := transport.RoundTrip(req)
-	if err != nil {
-		notify.Warning("ERROR!", err.Error())
-		log.Println("error:")
-		log.Println(err)
-
-		return
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		notify.Warning("ERROR!", err.Error())
-		log.Println("error:")
-		log.Println(err)
-
-		return
-	}
-	if resp.StatusCode != http.StatusOK {
-		if retry {
-			auth.GetAuth()
-			getReading(false)
-		}
-
-		return
-	}
-	systray.SetIcon(img.BuildImage(string(body)))
 }

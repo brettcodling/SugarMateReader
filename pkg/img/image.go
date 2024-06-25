@@ -23,6 +23,7 @@ var (
 	highRangeLevel float64
 )
 
+// init initialises the image environment variables.
 func init() {
 	path, _ := os.Executable()
 	dir = filepath.Dir(path)
@@ -49,6 +50,7 @@ func init() {
 	}
 }
 
+// BuildImage builds the entire reading image which is used as the systray icon.
 func BuildImage(html string) []byte {
 	fullContext := gg.NewContext(180, 50)
 	valueImage, err := getImageValue(html)
@@ -81,6 +83,7 @@ func BuildImage(html string) []byte {
 	return buf.Bytes()
 }
 
+// getImageContext gets an image context which can be used to build individual images.
 func getImageContext(value, font string, fontSize, red, green, blue float64) *gg.Context {
 	context := gg.NewContext(80, 50)
 	context.SetRGBA(0, 0, 0, 0)
@@ -101,6 +104,7 @@ func getImageContext(value, font string, fontSize, red, green, blue float64) *gg
 	return context
 }
 
+// getImageDelta gets the delta image.
 func getImageDelta(html string) (image.Image, error) {
 	start := `<div class="delta ">`
 	index := strings.Index(html, start)
@@ -131,6 +135,7 @@ func getImageDelta(html string) (image.Image, error) {
 	return deltaImage, nil
 }
 
+// getImageTrend gets the trend image.
 func getImageTrend(html string) (image.Image, error) {
 	start := `<div class="trend">`
 	index := strings.Index(html, start)
@@ -173,6 +178,7 @@ func getImageTrend(html string) (image.Image, error) {
 	return trendImage, nil
 }
 
+// getImageValue gets the value image.
 func getImageValue(html string) (image.Image, error) {
 	start := `<div class="value">`
 	index := strings.Index(html, start)

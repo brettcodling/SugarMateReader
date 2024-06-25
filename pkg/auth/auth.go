@@ -22,6 +22,7 @@ type tokenResponse struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
+// init initialises the auth environment variables.
 func init() {
 	Token = tokenResponse{
 		AccessToken: os.Getenv("TOKEN"),
@@ -36,6 +37,7 @@ func init() {
 	}
 }
 
+// GetAuth gets the access token from the SugarMate oauth endpoint using user credentials.
 func GetAuth() {
 	if Token.RefreshToken != "" {
 		refreshToken()
@@ -66,6 +68,7 @@ func GetAuth() {
 	json.Unmarshal(body, &Token)
 }
 
+// refreshToken gets the access token from the SugarMate oauth endpoint using a refresh token.
 func refreshToken() {
 	jsonBody := []byte(`{"access_token": "` + Token.AccessToken + `", "refresh_token": "` + Token.RefreshToken + `"}`)
 	bodyReader := bytes.NewReader(jsonBody)
