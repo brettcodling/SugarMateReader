@@ -195,8 +195,11 @@ func getImageValue(html string) (image.Image, error) {
 	red := 0.0
 	green := 1.0
 	blue := 0.0
-	if floatValue < lowRangeLevel || floatValue >= highRangeLevel {
+	if floatValue < lowRangeLevel {
 		green = 0
+		red = 1
+	} else if floatValue >= highRangeLevel {
+		green = 0.5
 		red = 1
 	}
 
