@@ -28,3 +28,4 @@ There are a few different environment variables you can use to customize your se
 ## notes
 * By default any deltas greater than or equal to 0.5mmol will display the delta value in red
 * By default any double arrow trends will trigger a notification
+* https://github.com/getlantern/systray is included in the pkg directory in order to build correctly
