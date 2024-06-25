@@ -1,6 +1,4 @@
 # SugarMateReader [![Go Report Card](https://goreportcard.com/badge/github.com/brettcodling/SugarMateReader)](https://goreportcard.com/report/github.com/brettcodling/SugarMateReader)
-
-# SugarMateReader
 A Linux system tray app to display glucose readings from sugarmate.io
 
 ## build
