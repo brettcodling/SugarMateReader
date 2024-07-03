@@ -3,23 +3,32 @@ package main
 import (
 	"log"
 	"log/syslog"
+	"os"
 	"time"
 
+	"github.com/brettcodling/SugarMateReader/pkg/auth"
+	"github.com/brettcodling/SugarMateReader/pkg/database"
+	"github.com/brettcodling/SugarMateReader/pkg/img"
 	"github.com/brettcodling/SugarMateReader/pkg/readings"
 	"github.com/brettcodling/SugarMateReader/pkg/systray"
 	"github.com/pkg/browser"
 )
 
 func main() {
-	syslog, err := syslog.New(syslog.LOG_INFO, "SugarMateReader")
-	if err != nil {
-		log.Fatal("Unable to connect to syslog")
+	defer database.DB.Close()
+	if os.Getenv("DISABLE_SYSLOG") != "1" {
+		syslog, err := syslog.New(syslog.LOG_INFO, "SugarMateReader")
+		if err != nil {
+			log.Fatal("Unable to connect to syslog")
+		}
+		log.SetOutput(syslog)
 	}
-	log.SetOutput(syslog)
 
 	systray.Run(func() {
 		refresh := systray.AddMenuItem("Refresh", "")
 		goToUrl := systray.AddMenuItem("Go To Nightstand", "")
+		login := systray.AddMenuItem("Login", "")
+		settings := systray.AddMenuItem("Settings", "")
 		systray.AddSeparator()
 		quit := systray.AddMenuItem("Quit", "")
 		go func() {
@@ -29,8 +38,16 @@ func main() {
 					setIcon()
 				case <-goToUrl.ClickedCh:
 					browser.OpenURL("https://sugarmate.io/nightstand")
+				case <-login.ClickedCh:
+					go auth.OpenLogin()
+				case <-settings.ClickedCh:
+					go img.OpenSettings()
 				case <-quit.ClickedCh:
 					systray.Quit()
+				case <-auth.LoginCh:
+					setIcon()
+				case <-img.SettingsCh:
+					setIcon()
 				}
 			}
 		}()

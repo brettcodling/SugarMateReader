@@ -3,51 +3,78 @@ package img
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"image"
 	"log"
 	"math"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/aarzilli/nucular"
+	"github.com/aarzilli/nucular/style"
+	"github.com/brettcodling/SugarMateReader/pkg/database"
+	"github.com/brettcodling/SugarMateReader/pkg/directory"
 	"github.com/brettcodling/SugarMateReader/pkg/notify"
 	"github.com/fogleman/gg"
 )
 
 var (
-	dir            string
-	lowAlertLevel  float64
-	highAlertLevel float64
-	lowRangeLevel  float64
-	highRangeLevel float64
+	lowAlertLevel                               float64
+	highAlertLevel                              float64
+	lowRangeLevel                               float64
+	highRangeLevel                              float64
+	lowRangeLevelField, highRangeLevelField     nucular.TextEditor
+	lowAlertLevelField, highAlertLevelField     nucular.TextEditor
+	lowAlertEnabledField, highAlertEnabledField bool
+	lowAlertEnabled, highAlertEnabled           bool
+	SettingsCh                                  chan struct{}
 )
 
 // init initialises the image environment variables.
 func init() {
-	path, _ := os.Executable()
-	dir = filepath.Dir(path)
-
-	lowAlertString := os.Getenv("LOW_ALERT")
+	lowAlertEnabledString := database.Get("LOW_ALERT_ENABLED")
+	if lowAlertEnabledString != "" {
+		lowAlertEnabled, _ = strconv.ParseBool(lowAlertEnabledString)
+	}
+	highAlertEnabledString := database.Get("HIGH_ALERT_ENABLED")
+	if highAlertEnabledString != "" {
+		highAlertEnabled, _ = strconv.ParseBool(highAlertEnabledString)
+	}
+	lowAlertString := database.Get("LOW_ALERT")
 	if lowAlertString != "" {
 		lowAlertLevel, _ = strconv.ParseFloat(lowAlertString, 64)
 	}
-	highAlertString := os.Getenv("HIGH_ALERT")
+	highAlertString := database.Get("HIGH_ALERT")
 	if highAlertString != "" {
 		highAlertLevel, _ = strconv.ParseFloat(highAlertString, 64)
 	}
-	lowRangeString := os.Getenv("LOW_RANGE")
+	lowRangeString := database.Get("LOW_RANGE")
 	if lowRangeString != "" {
 		lowRangeLevel, _ = strconv.ParseFloat(lowRangeString, 64)
 	} else {
 		lowRangeLevel = 4
 	}
-	highRangeString := os.Getenv("HIGH_RANGE")
+	highRangeString := database.Get("HIGH_RANGE")
 	if highRangeString != "" {
 		highRangeLevel, _ = strconv.ParseFloat(highRangeString, 64)
 	} else {
 		highRangeLevel = 10
 	}
+
+	lowRangeLevelField.Flags = nucular.EditField
+	lowRangeLevelField.SingleLine = true
+	lowRangeLevelField.Maxlen = 4
+	highRangeLevelField.Flags = nucular.EditField
+	highRangeLevelField.SingleLine = true
+	highRangeLevelField.Maxlen = 4
+	lowAlertLevelField.Flags = nucular.EditField
+	lowAlertLevelField.SingleLine = true
+	lowAlertLevelField.Maxlen = 4
+	highAlertLevelField.Flags = nucular.EditField
+	highAlertLevelField.SingleLine = true
+	highAlertLevelField.Maxlen = 4
+
+	SettingsCh = make(chan struct{})
 }
 
 // BuildImage builds the entire reading image which is used as the systray icon.
@@ -94,9 +121,9 @@ func getImageContext(value, font string, fontSize, red, green, blue float64) *gg
 	}
 	switch font {
 	case "noto":
-		font = dir + "/assets/NotoSansSymbols.ttf"
+		font = directory.Dir + "/assets/NotoSansSymbols.ttf"
 	default:
-		font = dir + "/assets/Roboto-Bold.ttf"
+		font = directory.Dir + "/assets/Roboto-Bold.ttf"
 	}
 	context.LoadFontFace(font, fontSize)
 	context.DrawStringAnchored(value, 30, 25, 0.5, 0.5)
@@ -192,9 +219,10 @@ func getImageValue(html string) (image.Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	if lowAlertLevel > 0 && floatValue <= lowAlertLevel {
+	if lowAlertEnabled && lowAlertLevel > 0 && floatValue <= lowAlertLevel {
 		notify.Warning("ALERT!", "LOW GLUCOSE")
-	} else if highAlertLevel > 0 && floatValue >= highAlertLevel {
+	}
+	if highAlertEnabled && highAlertLevel > 0 && floatValue >= highAlertLevel {
 		notify.Warning("ALERT!", "HIGH GLUCOSE")
 	}
 
@@ -218,4 +246,88 @@ func getImageValue(html string) (image.Image, error) {
 	}
 
 	return valueImage, nil
+}
+
+// OpenSettings will open the settings window
+func OpenSettings() {
+	lowRangeLevelField.SelectAll()
+	lowRangeLevelField.Text([]rune(fmt.Sprintf("%.1f", lowRangeLevel)))
+	highRangeLevelField.SelectAll()
+	highRangeLevelField.Text([]rune(fmt.Sprintf("%.1f", highRangeLevel)))
+	lowAlertLevelField.SelectAll()
+	lowAlertLevelField.Text([]rune(fmt.Sprintf("%.1f", lowAlertLevel)))
+	highAlertLevelField.SelectAll()
+	highAlertLevelField.Text([]rune(fmt.Sprintf("%.1f", highAlertLevel)))
+	lowAlertEnabledField = lowAlertEnabled
+	highAlertEnabledField = highAlertEnabled
+	wnd := nucular.NewMasterWindow(0, "Settings", updateSettings)
+	wnd.SetStyle(style.FromTheme(style.DarkTheme, 2.0))
+	wnd.Main()
+}
+
+// updateSettings will setup the login window and wait for updates
+// when the login button is clicked the email will be stored in a file and the password in keyring
+func updateSettings(w *nucular.Window) {
+	w.Row(50).Dynamic(1)
+	w.Label("Range:", "LC")
+	w.Row(25).Dynamic(2)
+	w.Label("Low", "LC")
+	w.Label("High", "LC")
+	w.Row(50).Dynamic(2)
+	lowRangeLevelField.Edit(w)
+	highRangeLevelField.Edit(w)
+	w.Row(50).Dynamic(1)
+	w.Label("Alerts:", "LC")
+	w.Row(25).Dynamic(2)
+	w.CheckboxText("Low", &lowAlertEnabledField)
+	w.CheckboxText("High", &highAlertEnabledField)
+	w.Row(50).Dynamic(2)
+	lowAlertLevelField.Edit(w)
+	highAlertLevelField.Edit(w)
+	w.Row(50).Dynamic(1)
+	if w.ButtonText("Save") {
+		var err error
+		lowRangeString := string(lowRangeLevelField.Buffer)
+		lowRangeLevel, err = strconv.ParseFloat(lowRangeString, 64)
+		if err != nil {
+			log.Println(err)
+			notify.Warning("ERROR!", err.Error())
+		}
+		database.Set("LOW_RANGE", lowRangeString)
+		highRangeString := string(highRangeLevelField.Buffer)
+		highRangeLevel, err = strconv.ParseFloat(highRangeString, 64)
+		if err != nil {
+			log.Println(err)
+			notify.Warning("ERROR!", err.Error())
+		}
+		database.Set("HIGH_RANGE", highRangeString)
+		lowAlertString := string(lowAlertLevelField.Buffer)
+		lowAlertLevel, err = strconv.ParseFloat(lowAlertString, 64)
+		if err != nil {
+			log.Println(err)
+			notify.Warning("ERROR!", err.Error())
+		}
+		database.Set("LOW_ALERT", lowAlertString)
+		highAlertString := string(highAlertLevelField.Buffer)
+		highAlertLevel, err = strconv.ParseFloat(highAlertString, 64)
+		if err != nil {
+			log.Println(err)
+			notify.Warning("ERROR!", err.Error())
+		}
+		database.Set("HIGH_ALERT", highAlertString)
+		lowAlertEnabled = lowAlertEnabledField
+		lowAlertEnabledString := "false"
+		if lowAlertEnabled {
+			lowAlertEnabledString = "true"
+		}
+		database.Set("LOW_ALERT_ENABLED", lowAlertEnabledString)
+		highAlertEnabled = highAlertEnabledField
+		highAlertEnabledString := "false"
+		if highAlertEnabled {
+			highAlertEnabledString = "true"
+		}
+		database.Set("HIGH_ALERT_ENABLED", highAlertEnabledString)
+		w.Master().Close()
+		SettingsCh <- struct{}{}
+	}
 }

@@ -8,13 +8,18 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/aarzilli/nucular"
+	"github.com/aarzilli/nucular/style"
+	"github.com/brettcodling/SugarMateReader/pkg/database"
 	"github.com/brettcodling/SugarMateReader/pkg/notify"
+	keyring "github.com/zalando/go-keyring"
 )
 
 var (
-	email    string
-	password string
-	Token    tokenResponse
+	email, password           string
+	emailField, passwordField nucular.TextEditor
+	LoginCh                   chan struct{}
+	Token                     tokenResponse
 )
 
 type tokenResponse struct {
@@ -27,13 +32,60 @@ func init() {
 	Token = tokenResponse{
 		AccessToken: os.Getenv("TOKEN"),
 	}
-	email = os.Getenv("EMAIL")
-	if email == "" {
-		log.Fatal("Missing email.")
+	emailField.Flags = nucular.EditField
+	emailField.SingleLine = true
+	passwordField.Flags = nucular.EditField
+	passwordField.SingleLine = true
+	passwordField.PasswordChar = '*'
+
+	LoginCh = make(chan struct{})
+
+	email = database.Get("EMAIL")
+	if len(email) > 0 {
+		var err error
+		password, err = keyring.Get("SugarMateReader", email)
+		if err != nil {
+			notify.Warning("ERROR!", err.Error())
+			go OpenLogin()
+		} else if password == "" {
+			go OpenLogin()
+		}
+	} else {
+		go OpenLogin()
 	}
-	password = os.Getenv("PASSWORD")
-	if password == "" {
-		log.Fatal("Missing password.")
+}
+
+// OpenLogin will open the login window
+func OpenLogin() {
+	emailField.SelectAll()
+	emailField.Text([]rune(email))
+	passwordField.SelectAll()
+	passwordField.Text([]rune(password))
+	wnd := nucular.NewMasterWindow(0, "Login", updateLogin)
+	wnd.SetStyle(style.FromTheme(style.DarkTheme, 2.0))
+	wnd.Main()
+}
+
+// updateLogin will setup the login window and wait for updates
+// when the login button is clicked the email will be stored in a file and the password in keyring
+func updateLogin(w *nucular.Window) {
+	w.Row(50).Dynamic(1)
+	w.Label("Email:", "LC")
+	emailField.Edit(w)
+	w.Row(50).Dynamic(1)
+	w.Label("Password:", "LC")
+	passwordField.Edit(w)
+	w.Row(50).Dynamic(1)
+	if w.ButtonText("Login") {
+		email = string(emailField.Buffer)
+		password = string(passwordField.Buffer)
+		err := keyring.Set("SugarMateReader", email, password)
+		if err != nil {
+			notify.Warning("ERROR!", err.Error())
+		}
+		database.Set("EMAIL", email)
+		w.Master().Close()
+		LoginCh <- struct{}{}
 	}
 }
 
