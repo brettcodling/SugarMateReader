@@ -28,6 +28,10 @@ var (
 	lowAlertEnabledField, highAlertEnabledField bool
 	lowAlertEnabled, highAlertEnabled           bool
 	SettingsCh                                  chan struct{}
+	missingLastDelta                            bool
+	missingLastTrend                            bool
+	missingLastValue                            bool
+	highLastValue                               bool
 )
 
 // init initialises the image environment variables.
@@ -136,8 +140,13 @@ func getImageDelta(html string) (image.Image, error) {
 	start := `<div class="delta ">`
 	index := strings.Index(html, start)
 	if index < 0 {
-		return nil, errors.New("Delta not found.")
+		if !missingLastDelta {
+			missingLastDelta = true
+			return nil, errors.New("Delta not found.")
+		}
+		return nil, nil
 	}
+	missingLastDelta = false
 	delta := html[index+len(start):]
 	delta = delta[:strings.Index(delta, "</div>")]
 
@@ -167,8 +176,13 @@ func getImageTrend(html string) (image.Image, error) {
 	start := `<div class="trend">`
 	index := strings.Index(html, start)
 	if index < 0 {
-		return nil, errors.New("Trend not found.")
+		if !missingLastTrend {
+			missingLastTrend = true
+			return nil, errors.New("Trend not found.")
+		}
+		return nil, nil
 	}
+	missingLastTrend = false
 	trend := html[index+len(start):]
 	trend = strings.TrimSpace(trend[:strings.Index(trend, "</div>")])
 	trend = trend[10:]
@@ -210,7 +224,11 @@ func getImageValue(html string) (image.Image, error) {
 	start := `<div class="value">`
 	index := strings.Index(html, start)
 	if index < 0 {
-		return nil, errors.New("Value not found.")
+		if !missingLastValue {
+			missingLastValue = true
+			return nil, errors.New("Value not found.")
+		}
+		return nil, nil
 	}
 	value := html[index+len(start):]
 	value = value[:strings.Index(value, "</div>")]
@@ -223,7 +241,12 @@ func getImageValue(html string) (image.Image, error) {
 		notify.Warning("ALERT!", "LOW GLUCOSE")
 	}
 	if highAlertEnabled && highAlertLevel > 0 && floatValue >= highAlertLevel {
-		notify.Warning("ALERT!", "HIGH GLUCOSE")
+		if !highLastValue {
+			highLastValue = true
+			notify.Warning("ALERT!", "HIGH GLUCOSE")
+		}
+	} else {
+		highLastValue = false
 	}
 
 	red := 0.0
