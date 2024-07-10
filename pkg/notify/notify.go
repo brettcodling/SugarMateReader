@@ -1,8 +1,11 @@
 package notify
 
-import "os/exec"
+import (
+	"github.com/brettcodling/SugarMateReader/pkg/directory"
+	"github.com/gen2brain/beeep"
+)
 
 // Warning creates a warning notification.
 func Warning(title, context string) {
-	exec.Command("notify-send", title, context, "--icon=warning", "--app-name=SugarMateReader").Run()
+	beeep.Notify(title, context, directory.Dir+"/assets/warning.png")
 }
