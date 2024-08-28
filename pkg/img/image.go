@@ -19,10 +19,12 @@ import (
 )
 
 var (
+	fastChange                                  float64
 	lowAlertLevel                               float64
 	highAlertLevel                              float64
 	lowRangeLevel                               float64
 	highRangeLevel                              float64
+	fastChangeField                             nucular.TextEditor
 	lowRangeLevelField, highRangeLevelField     nucular.TextEditor
 	lowAlertLevelField, highAlertLevelField     nucular.TextEditor
 	lowAlertEnabledField, highAlertEnabledField bool
@@ -64,19 +66,28 @@ func init() {
 	} else {
 		highRangeLevel = 10
 	}
+	fastChangeString := database.Get("FAST_CHANGE")
+	if fastChangeString != "" {
+		fastChange, _ = strconv.ParseFloat(fastChangeString, 64)
+	} else {
+		fastChange = 0.5
+	}
 
 	lowRangeLevelField.Flags = nucular.EditField
 	lowRangeLevelField.SingleLine = true
-	lowRangeLevelField.Maxlen = 4
+	lowRangeLevelField.Maxlen = 5
 	highRangeLevelField.Flags = nucular.EditField
 	highRangeLevelField.SingleLine = true
-	highRangeLevelField.Maxlen = 4
+	highRangeLevelField.Maxlen = 5
 	lowAlertLevelField.Flags = nucular.EditField
 	lowAlertLevelField.SingleLine = true
-	lowAlertLevelField.Maxlen = 4
+	lowAlertLevelField.Maxlen = 5
 	highAlertLevelField.Flags = nucular.EditField
 	highAlertLevelField.SingleLine = true
-	highAlertLevelField.Maxlen = 4
+	highAlertLevelField.Maxlen = 5
+	fastChangeField.Flags = nucular.EditField
+	fastChangeField.SingleLine = true
+	fastChangeField.Maxlen = 5
 
 	SettingsCh = make(chan struct{})
 }
@@ -90,7 +101,9 @@ func BuildImage(html string) []byte {
 		log.Println("error:")
 		log.Println(err)
 	} else {
-		fullContext.DrawImageAnchored(valueImage, 40, 25, 0.5, 0.5)
+		if valueImage.Bounds().Max.X > 0 || valueImage.Bounds().Max.Y > 0 {
+			fullContext.DrawImageAnchored(valueImage, 40, 25, 0.5, 0.5)
+		}
 	}
 	trendImage, err := getImageTrend(html)
 	if err != nil {
@@ -98,7 +111,9 @@ func BuildImage(html string) []byte {
 		log.Println("error:")
 		log.Println(err)
 	} else {
-		fullContext.DrawImageAnchored(trendImage, 90, 25, 0.5, 0.5)
+		if trendImage.Bounds().Max.X > 0 || trendImage.Bounds().Max.Y > 0 {
+			fullContext.DrawImageAnchored(trendImage, 90, 25, 0.5, 0.5)
+		}
 	}
 	deltaImage, err := getImageDelta(html)
 	if err != nil {
@@ -106,7 +121,9 @@ func BuildImage(html string) []byte {
 		log.Println("error:")
 		log.Println(err)
 	} else {
-		fullContext.DrawImageAnchored(deltaImage, 140, 25, 0.5, 0.5)
+		if deltaImage.Bounds().Max.X > 0 || deltaImage.Bounds().Max.Y > 0 {
+			fullContext.DrawImageAnchored(deltaImage, 140, 25, 0.5, 0.5)
+		}
 	}
 	buf := new(bytes.Buffer)
 	fullContext.EncodePNG(buf)
@@ -155,7 +172,7 @@ func getImageDelta(html string) (image.Image, error) {
 	red := 1.0
 	green := 1.0
 	blue := 1.0
-	if change >= 0.5 {
+	if change >= fastChange {
 		green = 0
 		blue = 0
 	}
@@ -273,6 +290,8 @@ func getImageValue(html string) (image.Image, error) {
 
 // OpenSettings will open the settings window
 func OpenSettings() {
+	fastChangeField.SelectAll()
+	fastChangeField.Text([]rune(fmt.Sprintf("%.1f", fastChange)))
 	lowRangeLevelField.SelectAll()
 	lowRangeLevelField.Text([]rune(fmt.Sprintf("%.1f", lowRangeLevel)))
 	highRangeLevelField.SelectAll()
@@ -307,6 +326,8 @@ func updateSettings(w *nucular.Window) {
 	w.Row(50).Dynamic(2)
 	lowAlertLevelField.Edit(w)
 	highAlertLevelField.Edit(w)
+	w.Label("Fast Change", "LC")
+	fastChangeField.Edit(w)
 	w.Row(50).Dynamic(1)
 	if w.ButtonText("Save") {
 		var err error
@@ -350,6 +371,13 @@ func updateSettings(w *nucular.Window) {
 			highAlertEnabledString = "true"
 		}
 		database.Set("HIGH_ALERT_ENABLED", highAlertEnabledString)
+		fastChangeString := string(fastChangeField.Buffer)
+		fastChange, err = strconv.ParseFloat(fastChangeString, 64)
+		if err != nil {
+			log.Println(err)
+			notify.Warning("ERROR!", err.Error())
+		}
+		database.Set("FAST_CHANGE", fastChangeString)
 		w.Master().Close()
 		SettingsCh <- struct{}{}
 	}

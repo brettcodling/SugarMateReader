@@ -9,6 +9,7 @@ import (
 	"github.com/brettcodling/SugarMateReader/pkg/auth"
 	"github.com/brettcodling/SugarMateReader/pkg/database"
 	"github.com/brettcodling/SugarMateReader/pkg/img"
+	"github.com/brettcodling/SugarMateReader/pkg/notify"
 	"github.com/brettcodling/SugarMateReader/pkg/readings"
 	"github.com/brettcodling/SugarMateReader/pkg/systray"
 	"github.com/pkg/browser"
@@ -64,6 +65,12 @@ func main() {
 
 // setIcon sets the systray icon to the reading image.
 func setIcon() {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println(err)
+			notify.Warning("ERROR!", "Failed to set reading")
+		}
+	}()
 	reading := readings.GetReading(true)
 	if len(reading) > 0 {
 		systray.SetIcon(reading)
