@@ -72,8 +72,13 @@ func GetReading(retry bool, before, after string) []byte {
 		return []byte{}
 	}
 	if reading.MgDl < 1 {
-		newAfter, _ := time.Parse(time.RFC3339Nano, before)
-		return GetReading(retry, before, newAfter.Add(-3*time.Hour).Format(time.RFC3339Nano))
+		if retry {
+			newAfter, _ := time.Parse(time.RFC3339Nano, before)
+			return GetReading(false, before, newAfter.Add(-3*time.Hour).Format(time.RFC3339Nano))
+		}
+		notify.Warning("ERROR!", "Failed to get readings")
+		log.Println("error:")
+		log.Fatal("Failed to get readings")
 	}
 	return img.BuildImage(reading.MgDl, reading.Trend, reading.Delta)
 }
