@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"log"
+	"math"
 	"strconv"
 	"strings"
 
@@ -169,7 +170,7 @@ func getImageDelta(delta int) (image.Image, error) {
 	red := 1.0
 	green := 1.0
 	blue := 1.0
-	if change >= fastChange {
+	if math.Abs(change) >= fastChange {
 		green = 0
 		blue = 0
 	}
