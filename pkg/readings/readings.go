@@ -119,10 +119,10 @@ func parseReading(body []byte) (CurrentReading, error) {
 		aCreated, _ := time.Parse(time.RFC3339Nano, a.CreatedAt)
 		bCreated, _ := time.Parse(time.RFC3339Nano, b.CreatedAt)
 		if aCreated.After(bCreated) {
-			return 1
+			return -1
 		}
 
-		return -1
+		return 1
 	})
 
 	LastUpdateTime = events[0].CreatedAt
