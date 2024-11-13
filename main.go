@@ -12,6 +12,7 @@ import (
 	"github.com/brettcodling/SugarMateReader/pkg/notify"
 	"github.com/brettcodling/SugarMateReader/pkg/readings"
 	"github.com/brettcodling/SugarMateReader/pkg/systray"
+	"github.com/go-co-op/gocron"
 	"github.com/pkg/browser"
 )
 
@@ -26,7 +27,6 @@ func main() {
 	}
 
 	systray.Run(func() {
-		refresh := systray.AddMenuItem("Refresh", "")
 		goToUrl := systray.AddMenuItem("Go To Nightstand", "")
 		login := systray.AddMenuItem("Login", "")
 		settings := systray.AddMenuItem("Settings", "")
@@ -35,8 +35,6 @@ func main() {
 		go func() {
 			for {
 				select {
-				case <-refresh.ClickedCh:
-					setIcon()
 				case <-goToUrl.ClickedCh:
 					browser.OpenURL("https://sugarmate.io/nightstand")
 				case <-login.ClickedCh:
@@ -53,13 +51,21 @@ func main() {
 			}
 		}()
 		setIcon()
-		tick := time.Tick(1 * time.Minute)
-		for {
-			select {
-			case <-tick:
-				setIcon()
-			}
+		if readings.LastUpdateTime == "" {
+			notify.Warning("ERROR!", "Couldn't get any readings")
+			log.Fatal("No readings available")
 		}
+		tz, _ := time.LoadLocation("Local")
+		if tz == nil {
+			tz = time.UTC
+		}
+		s := gocron.NewScheduler(tz)
+		specificTime, err := time.Parse(time.RFC3339Nano, readings.LastUpdateTime)
+		if err != nil {
+			notify.Warning("ERROR!", "Failed to parse last reading time")
+			log.Fatal("Failed to parse last reading time")
+		}
+		s.Every(5).Minutes().StartAt(specificTime.Add(10 * time.Second)).Do(setIcon)
 	}, func() {})
 }
 
@@ -71,7 +77,7 @@ func setIcon() {
 			notify.Warning("ERROR!", "Failed to set reading")
 		}
 	}()
-	reading := readings.GetReading(true)
+	reading := readings.GetReading(true, "", "")
 	if len(reading) > 0 {
 		systray.SetIcon(reading)
 	}

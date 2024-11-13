@@ -2,11 +2,9 @@ package img
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"image"
 	"log"
-	"math"
 	"strconv"
 	"strings"
 
@@ -34,10 +32,20 @@ var (
 	missingLastTrend                            bool
 	missingLastValue                            bool
 	highLastValue                               bool
+	lastunit                                    string
+	unit                                        string
+	format                                      = "%.1f"
 )
 
 // init initialises the image environment variables.
 func init() {
+	unit = database.Get("UNIT")
+	if unit == "" {
+		unit = "mmol"
+	}
+	if unit == "mgdl" {
+		format = "%.0f"
+	}
 	lowAlertEnabledString := database.Get("LOW_ALERT_ENABLED")
 	if lowAlertEnabledString != "" {
 		lowAlertEnabled, _ = strconv.ParseBool(lowAlertEnabledString)
@@ -93,9 +101,9 @@ func init() {
 }
 
 // BuildImage builds the entire reading image which is used as the systray icon.
-func BuildImage(html string) []byte {
+func BuildImage(value int, trend string, delta int) []byte {
 	fullContext := gg.NewContext(180, 50)
-	valueImage, err := getImageValue(html)
+	valueImage, err := getImageValue(value)
 	if err != nil {
 		notify.Warning("ERROR!", err.Error())
 		log.Println("error:")
@@ -105,7 +113,7 @@ func BuildImage(html string) []byte {
 			fullContext.DrawImageAnchored(valueImage, 40, 25, 0.5, 0.5)
 		}
 	}
-	trendImage, err := getImageTrend(html)
+	trendImage, err := getImageTrend(trend)
 	if err != nil {
 		notify.Warning("ERROR!", err.Error())
 		log.Println("error:")
@@ -115,12 +123,12 @@ func BuildImage(html string) []byte {
 			fullContext.DrawImageAnchored(trendImage, 90, 25, 0.5, 0.5)
 		}
 	}
-	deltaImage, err := getImageDelta(html)
+	deltaImage, err := getImageDelta(delta)
 	if err != nil {
 		notify.Warning("ERROR!", err.Error())
 		log.Println("error:")
 		log.Println(err)
-	} else {
+	} else if deltaImage != nil {
 		if deltaImage.Bounds().Max.X > 0 || deltaImage.Bounds().Max.Y > 0 {
 			fullContext.DrawImageAnchored(deltaImage, 140, 25, 0.5, 0.5)
 		}
@@ -153,22 +161,11 @@ func getImageContext(value, font string, fontSize, red, green, blue float64) *gg
 }
 
 // getImageDelta gets the delta image.
-func getImageDelta(html string) (image.Image, error) {
-	start := `<div class="delta ">`
-	index := strings.Index(html, start)
-	if index < 0 {
-		if !missingLastDelta {
-			missingLastDelta = true
-			return nil, errors.New("Delta not found.")
-		}
-		return nil, nil
+func getImageDelta(delta int) (image.Image, error) {
+	change := float64(delta)
+	if unit == "mmol" {
+		change = change / 18
 	}
-	missingLastDelta = false
-	delta := html[index+len(start):]
-	delta = delta[:strings.Index(delta, "</div>")]
-
-	change, _ := strconv.ParseFloat(delta, 64)
-	change = math.Abs(change)
 	red := 1.0
 	green := 1.0
 	blue := 1.0
@@ -177,7 +174,7 @@ func getImageDelta(html string) (image.Image, error) {
 		blue = 0
 	}
 
-	context := getImageContext(delta, "roboto", 26, red, green, blue)
+	context := getImageContext(fmt.Sprintf(format, change), "roboto", 26, red, green, blue)
 	buf := new(bytes.Buffer)
 	context.EncodePNG(buf)
 	deltaImage, _, err := image.Decode(buf)
@@ -189,21 +186,7 @@ func getImageDelta(html string) (image.Image, error) {
 }
 
 // getImageTrend gets the trend image.
-func getImageTrend(html string) (image.Image, error) {
-	start := `<div class="trend">`
-	index := strings.Index(html, start)
-	if index < 0 {
-		if !missingLastTrend {
-			missingLastTrend = true
-			return nil, errors.New("Trend not found.")
-		}
-		return nil, nil
-	}
-	missingLastTrend = false
-	trend := html[index+len(start):]
-	trend = strings.TrimSpace(trend[:strings.Index(trend, "</div>")])
-	trend = trend[10:]
-	trend = trend[:len(trend)-4]
+func getImageTrend(trend string) (image.Image, error) {
 	switch true {
 	case strings.Contains(trend, "FORTY_FIVE_UP"):
 		trend = "↗"
@@ -237,22 +220,10 @@ func getImageTrend(html string) (image.Image, error) {
 }
 
 // getImageValue gets the value image.
-func getImageValue(html string) (image.Image, error) {
-	start := `<div class="value">`
-	index := strings.Index(html, start)
-	if index < 0 {
-		if !missingLastValue {
-			missingLastValue = true
-			return nil, errors.New("Value not found.")
-		}
-		return nil, nil
-	}
-	value := html[index+len(start):]
-	value = value[:strings.Index(value, "</div>")]
-
-	floatValue, err := strconv.ParseFloat(value, 64)
-	if err != nil {
-		return nil, err
+func getImageValue(value int) (image.Image, error) {
+	floatValue := float64(value)
+	if unit == "mmol" {
+		floatValue = floatValue / 18
 	}
 	if lowAlertEnabled && lowAlertLevel > 0 && floatValue <= lowAlertLevel {
 		notify.Warning("ALERT!", "LOW GLUCOSE")
@@ -277,7 +248,7 @@ func getImageValue(html string) (image.Image, error) {
 		red = 1
 	}
 
-	context := getImageContext(value, "roboto", 32, red, green, blue)
+	context := getImageContext(fmt.Sprintf(format, floatValue), "roboto", 32, red, green, blue)
 	buf := new(bytes.Buffer)
 	context.EncodePNG(buf)
 	valueImage, _, err := image.Decode(buf)
@@ -290,16 +261,17 @@ func getImageValue(html string) (image.Image, error) {
 
 // OpenSettings will open the settings window
 func OpenSettings() {
+	lastunit = unit
 	fastChangeField.SelectAll()
-	fastChangeField.Text([]rune(fmt.Sprintf("%.1f", fastChange)))
+	fastChangeField.Text([]rune(fmt.Sprintf(format, fastChange)))
 	lowRangeLevelField.SelectAll()
-	lowRangeLevelField.Text([]rune(fmt.Sprintf("%.1f", lowRangeLevel)))
+	lowRangeLevelField.Text([]rune(fmt.Sprintf(format, lowRangeLevel)))
 	highRangeLevelField.SelectAll()
-	highRangeLevelField.Text([]rune(fmt.Sprintf("%.1f", highRangeLevel)))
+	highRangeLevelField.Text([]rune(fmt.Sprintf(format, highRangeLevel)))
 	lowAlertLevelField.SelectAll()
-	lowAlertLevelField.Text([]rune(fmt.Sprintf("%.1f", lowAlertLevel)))
+	lowAlertLevelField.Text([]rune(fmt.Sprintf(format, lowAlertLevel)))
 	highAlertLevelField.SelectAll()
-	highAlertLevelField.Text([]rune(fmt.Sprintf("%.1f", highAlertLevel)))
+	highAlertLevelField.Text([]rune(fmt.Sprintf(format, highAlertLevel)))
 	lowAlertEnabledField = lowAlertEnabled
 	highAlertEnabledField = highAlertEnabled
 	wnd := nucular.NewMasterWindow(0, "Settings", updateSettings)
@@ -328,6 +300,47 @@ func updateSettings(w *nucular.Window) {
 	highAlertLevelField.Edit(w)
 	w.Label("Fast Change", "LC")
 	fastChangeField.Edit(w)
+	w.Row(50).Dynamic(1)
+	w.Label("Units:", "LC")
+	w.Row(50).Dynamic(2)
+	if w.OptionText("mmol/l", lastunit == "mmol") {
+		if lastunit == "mgdl" {
+			factor := 18.0
+			if unit == "mmol" {
+				factor = 1.0
+			}
+			fastChangeField.SelectAll()
+			fastChangeField.Text([]rune(fmt.Sprintf("%.1f", fastChange/factor)))
+			lowRangeLevelField.SelectAll()
+			lowRangeLevelField.Text([]rune(fmt.Sprintf("%.1f", lowRangeLevel/factor)))
+			highRangeLevelField.SelectAll()
+			highRangeLevelField.Text([]rune(fmt.Sprintf("%.1f", highRangeLevel/factor)))
+			lowAlertLevelField.SelectAll()
+			lowAlertLevelField.Text([]rune(fmt.Sprintf("%.1f", lowAlertLevel/factor)))
+			highAlertLevelField.SelectAll()
+			highAlertLevelField.Text([]rune(fmt.Sprintf("%.1f", highAlertLevel/factor)))
+		}
+		lastunit = "mmol"
+	}
+	if w.OptionText("mg/dl", lastunit == "mgdl") {
+		if lastunit == "mmol" {
+			factor := 18.0
+			if unit == "mgdl" {
+				factor = 1.0
+			}
+			fastChangeField.SelectAll()
+			fastChangeField.Text([]rune(fmt.Sprintf("%.0f", fastChange*factor)))
+			lowRangeLevelField.SelectAll()
+			lowRangeLevelField.Text([]rune(fmt.Sprintf("%.0f", lowRangeLevel*factor)))
+			highRangeLevelField.SelectAll()
+			highRangeLevelField.Text([]rune(fmt.Sprintf("%.0f", highRangeLevel*factor)))
+			lowAlertLevelField.SelectAll()
+			lowAlertLevelField.Text([]rune(fmt.Sprintf("%.0f", lowAlertLevel*factor)))
+			highAlertLevelField.SelectAll()
+			highAlertLevelField.Text([]rune(fmt.Sprintf("%.0f", highAlertLevel*factor)))
+		}
+		lastunit = "mgdl"
+	}
 	w.Row(50).Dynamic(1)
 	if w.ButtonText("Save") {
 		var err error
@@ -378,6 +391,14 @@ func updateSettings(w *nucular.Window) {
 			notify.Warning("ERROR!", err.Error())
 		}
 		database.Set("FAST_CHANGE", fastChangeString)
+		database.Set("UNIT", lastunit)
+		unit = lastunit
+		if unit == "mmol" {
+			format = "%.1f"
+		}
+		if unit == "mgdl" {
+			format = "%.0f"
+		}
 		w.Master().Close()
 		SettingsCh <- struct{}{}
 	}
