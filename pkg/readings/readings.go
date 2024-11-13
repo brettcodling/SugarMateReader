@@ -75,7 +75,6 @@ func GetReading(retry bool, before, after string) []byte {
 		newAfter, _ := time.Parse(time.RFC3339Nano, before)
 		return GetReading(retry, before, newAfter.Add(-3*time.Hour).Format(time.RFC3339Nano))
 	}
-	log.Printf("%+v\n", reading)
 	return img.BuildImage(reading.MgDl, reading.Trend, reading.Delta)
 }
 

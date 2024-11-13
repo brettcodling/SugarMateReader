@@ -66,6 +66,7 @@ func main() {
 			log.Fatal("Failed to parse last reading time")
 		}
 		s.Every(5).Minutes().StartAt(specificTime.Add(10 * time.Second)).Do(setIcon)
+		s.StartAsync()
 	}, func() {})
 }
 
