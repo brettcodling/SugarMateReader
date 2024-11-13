@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"log/syslog"
 	"os"
@@ -16,6 +17,8 @@ import (
 	"github.com/pkg/browser"
 )
 
+var lastUpdateMenuItem *systray.MenuItem
+
 func main() {
 	defer database.DB.Close()
 	if os.Getenv("DISABLE_SYSLOG") != "1" {
@@ -27,6 +30,8 @@ func main() {
 	}
 
 	systray.Run(func() {
+		lastUpdateMenuItem = systray.AddMenuItem("", "")
+		lastUpdateMenuItem.Disable()
 		goToUrl := systray.AddMenuItem("Go To Nightstand", "")
 		login := systray.AddMenuItem("Login", "")
 		settings := systray.AddMenuItem("Settings", "")
@@ -81,5 +86,12 @@ func setIcon() {
 	reading := readings.GetReading(true, "", "")
 	if len(reading) > 0 {
 		systray.SetIcon(reading)
+		lastUpdateTime, err := time.Parse(time.RFC3339Nano, readings.LastUpdateTime)
+		if err != nil {
+			log.Println(err)
+			notify.Warning("ERROR!", "Failed to parse last update time")
+			return
+		}
+		lastUpdateMenuItem.SetTitle(fmt.Sprintf("Last updated: %s", lastUpdateTime.Format(time.TimeOnly)))
 	}
 }
