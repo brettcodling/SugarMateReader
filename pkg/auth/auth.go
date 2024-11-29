@@ -100,7 +100,7 @@ func GetAuth() {
 	}
 	jsonBody := []byte(`{"email": "` + email + `", "password": "` + password + `"}`)
 	bodyReader := bytes.NewReader(jsonBody)
-	resp, err := http.Post("https://sugarmate.io/oauth/web", "application/json", bodyReader)
+	resp, err := http.Post("https://api.sugarmate.io/oauth/web", "application/json", bodyReader)
 	if err != nil {
 		notify.Warning("ERROR!", err.Error())
 		log.Println("error:")
@@ -124,7 +124,7 @@ func GetAuth() {
 func refreshToken() {
 	jsonBody := []byte(`{"access_token": "` + Token.AccessToken + `", "refresh_token": "` + Token.RefreshToken + `"}`)
 	bodyReader := bytes.NewReader(jsonBody)
-	resp, err := http.Post("https://sugarmate.io/oauth/web/refresh", "application/json", bodyReader)
+	resp, err := http.Post("https://api.sugarmate.io/oauth/web/refresh", "application/json", bodyReader)
 	if err != nil {
 		notify.Warning("ERROR!", err.Error())
 		log.Println("error:")
