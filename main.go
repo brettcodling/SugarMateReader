@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"log"
 	"log/syslog"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/brettcodling/SugarMateReader/pkg/auth"
 	"github.com/brettcodling/SugarMateReader/pkg/database"
+	"github.com/brettcodling/SugarMateReader/pkg/directory"
 	"github.com/brettcodling/SugarMateReader/pkg/img"
 	"github.com/brettcodling/SugarMateReader/pkg/notify"
 	"github.com/brettcodling/SugarMateReader/pkg/readings"
@@ -17,7 +19,25 @@ import (
 	"github.com/pkg/browser"
 )
 
-var lastUpdateMenuItem *systray.MenuItem
+var (
+	//go:embed assets/*
+	assets             embed.FS
+	lastUpdateMenuItem *systray.MenuItem
+)
+
+func init() {
+	files, err := assets.ReadDir("assets")
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, file := range files {
+		content, err := assets.ReadFile("assets/" + file.Name())
+		if err != nil {
+			log.Fatal(err)
+		}
+		os.WriteFile(directory.ConfigDir+file.Name(), content, os.ModePerm)
+	}
+}
 
 func main() {
 	defer database.DB.Close()

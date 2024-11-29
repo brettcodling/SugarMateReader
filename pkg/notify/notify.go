@@ -7,5 +7,5 @@ import (
 
 // Warning creates a warning notification.
 func Warning(title, context string) {
-	beeep.Notify(title, context, directory.Dir+"/assets/warning.png")
+	beeep.Notify(title, context, directory.ConfigDir+"warning.png")
 }
