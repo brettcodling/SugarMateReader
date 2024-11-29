@@ -11,7 +11,7 @@ var DB *bolt.DB
 
 func init() {
 	var err error
-	DB, err = bolt.Open(directory.Dir+"/settings.db", 0600, nil)
+	DB, err = bolt.Open(directory.ConfigDir+"settings.db", 0600, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
