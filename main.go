@@ -32,7 +32,7 @@ func main() {
 	systray.Run(func() {
 		lastUpdateMenuItem = systray.AddMenuItem("", "")
 		lastUpdateMenuItem.Disable()
-		goToUrl := systray.AddMenuItem("Go To Nightstand", "")
+		goToUrl := systray.AddMenuItem("Open in browser", "")
 		login := systray.AddMenuItem("Login", "")
 		settings := systray.AddMenuItem("Settings", "")
 		systray.AddSeparator()
@@ -41,7 +41,7 @@ func main() {
 			for {
 				select {
 				case <-goToUrl.ClickedCh:
-					browser.OpenURL("https://sugarmate.io/nightstand")
+					browser.OpenURL("https://app.sugarmate.io")
 				case <-login.ClickedCh:
 					go auth.OpenLogin()
 				case <-settings.ClickedCh:
