@@ -27,13 +27,7 @@ func main() {
 	}
 
 	systray.Run(func() {
-<<<<<<< Updated upstream
-		goToUrl := systray.AddMenuItem("Go To Nightstand", "")
-=======
-		lastUpdateMenuItem = systray.AddMenuItem("", "")
-		lastUpdateMenuItem.Disable()
 		goToUrl := systray.AddMenuItem("Open in browser", "")
->>>>>>> Stashed changes
 		login := systray.AddMenuItem("Login", "")
 		settings := systray.AddMenuItem("Settings", "")
 		systray.AddSeparator()
