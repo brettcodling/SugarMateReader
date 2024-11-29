@@ -66,7 +66,7 @@ func main() {
 				case <-login.ClickedCh:
 					go ui.OpenLogin()
 				case <-settings.ClickedCh:
-					go img.OpenSettings()
+					go ui.OpenSettings()
 				case <-quit.ClickedCh:
 					systray.Quit()
 				case <-auth.LoginCh:

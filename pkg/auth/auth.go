@@ -42,7 +42,6 @@ func init() {
 
 func LoadPassword() error {
 	var err error
-	keyring.Delete("SugarMateReader", Email)
 	Password, err = keyring.Get("SugarMateReader", Email)
 
 	return err

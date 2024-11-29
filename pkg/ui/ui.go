@@ -19,9 +19,13 @@ import (
 var (
 	//go:embed close.tmpl
 	closeTmpl string
+	//go:embed layout.tmpl
+	layoutTmpl string
 	//go:embed login.tmpl
 	loginTmpl string
-	url       string
+	//go:embed settings.tmpl
+	settingsTmpl string
+	url          string
 )
 
 // init initialises the auth environment variables.
@@ -32,6 +36,7 @@ func init() {
 		log.Fatal(err)
 	}
 	http.HandleFunc("/login", handleLogin)
+	http.HandleFunc("/settings", handleSettings)
 	go http.Serve(listener, nil)
 	url = fmt.Sprintf("http://localhost:%d", listener.Addr().(*net.TCPAddr).Port)
 
@@ -53,7 +58,7 @@ func init() {
 
 func handleLogin(w http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodGet {
-		t, err := template.New("login").Parse(loginTmpl)
+		t, err := template.New("login").Parse(loginTmpl + layoutTmpl)
 		if err != nil {
 			notify.Warning("ERROR!", err.Error())
 			log.Println("error:")
@@ -97,7 +102,32 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 	handleLogin(w, req)
 }
 
+func handleSettings(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet && req.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if req.Method == http.MethodPost {
+		req.ParseForm()
+	}
+	t, err := template.New("settings").Parse(settingsTmpl + layoutTmpl)
+	if err != nil {
+		notify.Warning("ERROR!", err.Error())
+		log.Println("error:")
+		log.Println(err)
+		return
+	}
+	t.Execute(w, auth.Email)
+	return
+}
+
 // OpenLogin will open the login window
 func OpenLogin() {
 	browser.OpenURL(url + "/login")
+}
+
+// OpenSettings will open the settings window
+func OpenSettings() {
+	browser.OpenURL(url + "/settings")
 }
