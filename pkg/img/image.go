@@ -151,9 +151,9 @@ func getImageContext(value, font string, fontSize, red, green, blue float64) *gg
 	}
 	switch font {
 	case "noto":
-		font = directory.Dir + "/assets/NotoSansSymbols.ttf"
+		font = directory.ConfigDir + "NotoSansSymbols.ttf"
 	default:
-		font = directory.Dir + "/assets/Roboto-Bold.ttf"
+		font = directory.ConfigDir + "Roboto-Bold.ttf"
 	}
 	context.LoadFontFace(font, fontSize)
 	context.DrawStringAnchored(value, 30, 25, 0.5, 0.5)
