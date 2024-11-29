@@ -18,7 +18,7 @@ import (
 var (
 	email, password           string
 	emailField, passwordField nucular.TextEditor
-	LoginCh                   chan struct{}
+	LoginCh                   chan bool
 	Token                     tokenResponse
 )
 
@@ -38,7 +38,7 @@ func init() {
 	passwordField.SingleLine = true
 	passwordField.PasswordChar = '*'
 
-	LoginCh = make(chan struct{})
+	LoginCh = make(chan bool)
 
 	email = database.Get("EMAIL")
 	if len(email) > 0 {
@@ -46,12 +46,12 @@ func init() {
 		password, err = keyring.Get("SugarMateReader", email)
 		if err != nil {
 			notify.Warning("ERROR!", err.Error())
-			go OpenLogin()
+			OpenLogin()
 		} else if password == "" {
-			go OpenLogin()
+			OpenLogin()
 		}
 	} else {
-		go OpenLogin()
+		OpenLogin()
 	}
 }
 
@@ -85,7 +85,9 @@ func updateLogin(w *nucular.Window) {
 		}
 		database.Set("EMAIL", email)
 		w.Master().Close()
-		LoginCh <- struct{}{}
+		go func() {
+			LoginCh <- true
+		}()
 	}
 }
 
