@@ -8,87 +8,44 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/aarzilli/nucular"
-	"github.com/aarzilli/nucular/style"
+	_ "embed"
+
 	"github.com/brettcodling/SugarMateReader/pkg/database"
 	"github.com/brettcodling/SugarMateReader/pkg/notify"
 	keyring "github.com/zalando/go-keyring"
 )
 
 var (
-	email, password           string
-	emailField, passwordField nucular.TextEditor
-	LoginCh                   chan bool
-	Token                     tokenResponse
+	//go:embed close.tmpl
+	closeTmpl string
+	//go:embed login.tmpl
+	loginTmpl       string
+	Email, Password string
+	LoginCh         chan bool
+	Token           TokenResponse
 )
 
-type tokenResponse struct {
+type TokenResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 }
 
 // init initialises the auth environment variables.
 func init() {
-	Token = tokenResponse{
+	Token = TokenResponse{
 		AccessToken: os.Getenv("TOKEN"),
 	}
-	emailField.Flags = nucular.EditField
-	emailField.SingleLine = true
-	passwordField.Flags = nucular.EditField
-	passwordField.SingleLine = true
-	passwordField.PasswordChar = '*'
 
 	LoginCh = make(chan bool)
-
-	email = database.Get("EMAIL")
-	if len(email) > 0 {
-		var err error
-		password, err = keyring.Get("SugarMateReader", email)
-		if err != nil {
-			notify.Warning("ERROR!", err.Error())
-			OpenLogin()
-		} else if password == "" {
-			OpenLogin()
-		}
-	} else {
-		OpenLogin()
-	}
+	Email = database.Get("EMAIL")
 }
 
-// OpenLogin will open the login window
-func OpenLogin() {
-	emailField.SelectAll()
-	emailField.Text([]rune(email))
-	passwordField.SelectAll()
-	passwordField.Text([]rune(password))
-	wnd := nucular.NewMasterWindow(0, "Login", updateLogin)
-	wnd.SetStyle(style.FromTheme(style.DarkTheme, 2.0))
-	wnd.Main()
-}
+func LoadPassword() error {
+	var err error
+	keyring.Delete("SugarMateReader", Email)
+	Password, err = keyring.Get("SugarMateReader", Email)
 
-// updateLogin will setup the login window and wait for updates
-// when the login button is clicked the email will be stored in a file and the password in keyring
-func updateLogin(w *nucular.Window) {
-	w.Row(50).Dynamic(1)
-	w.Label("Email:", "LC")
-	emailField.Edit(w)
-	w.Row(50).Dynamic(1)
-	w.Label("Password:", "LC")
-	passwordField.Edit(w)
-	w.Row(50).Dynamic(1)
-	if w.ButtonText("Login") {
-		email = string(emailField.Buffer)
-		password = string(passwordField.Buffer)
-		err := keyring.Set("SugarMateReader", email, password)
-		if err != nil {
-			notify.Warning("ERROR!", err.Error())
-		}
-		database.Set("EMAIL", email)
-		w.Master().Close()
-		go func() {
-			LoginCh <- true
-		}()
-	}
+	return err
 }
 
 // GetAuth gets the access token from the SugarMate oauth endpoint using user credentials.
@@ -100,7 +57,7 @@ func GetAuth() {
 			return
 		}
 	}
-	jsonBody := []byte(`{"email": "` + email + `", "password": "` + password + `"}`)
+	jsonBody := []byte(`{"email": "` + Email + `", "password": "` + Password + `"}`)
 	bodyReader := bytes.NewReader(jsonBody)
 	resp, err := http.Post("https://api.sugarmate.io/oauth/web", "application/json", bodyReader)
 	if err != nil {

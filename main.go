@@ -13,6 +13,7 @@ import (
 	"github.com/brettcodling/SugarMateReader/pkg/notify"
 	"github.com/brettcodling/SugarMateReader/pkg/readings"
 	"github.com/brettcodling/SugarMateReader/pkg/systray"
+	"github.com/brettcodling/SugarMateReader/pkg/ui"
 	"github.com/go-co-op/gocron"
 	"github.com/pkg/browser"
 )
@@ -43,7 +44,7 @@ func main() {
 				case <-goToUrl.ClickedCh:
 					browser.OpenURL("https://app.sugarmate.io")
 				case <-login.ClickedCh:
-					go auth.OpenLogin()
+					go ui.OpenLogin()
 				case <-settings.ClickedCh:
 					go img.OpenSettings()
 				case <-quit.ClickedCh:
