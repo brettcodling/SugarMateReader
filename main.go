@@ -6,6 +6,7 @@ import (
 	"log"
 	"log/syslog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/brettcodling/SugarMateReader/pkg/auth"
@@ -55,6 +56,32 @@ func main() {
 		lastUpdateMenuItem.Disable()
 		goToUrl := systray.AddMenuItem("Open in browser", "")
 		login := systray.AddMenuItem("Login", "")
+		if _, err := os.Stat("/usr/local/bin/SugarMateReader"); err == nil {
+			checked := false
+			if _, err := os.Stat(directory.ConfigDir + "./../autostart/SugarMateReader.desktop"); err == nil {
+				checked = true
+			}
+			autostart := *systray.AddMenuItemCheckbox("Launch on start up", "", checked)
+			go func() {
+				for range autostart.ClickedCh {
+					if autostart.Checked() {
+						autostart.Uncheck()
+					} else {
+						autostart.Check()
+					}
+					err := setAutostart(autostart.Checked())
+					if err != nil {
+						log.Println("error:")
+						log.Println(err)
+						if autostart.Checked() {
+							autostart.Check()
+						} else {
+							autostart.Uncheck()
+						}
+					}
+				}
+			}()
+		}
 		settings := systray.AddMenuItem("Settings", "")
 		systray.AddSeparator()
 		quit := systray.AddMenuItem("Quit", "")
@@ -94,6 +121,29 @@ func main() {
 		s.Every(5).Minutes().StartAt(specificTime.Add(10 * time.Second)).Do(setIcon)
 		s.StartAsync()
 	}, func() {})
+}
+
+// setAutostart will configure the application to run on startup
+func setAutostart(autostart bool) error {
+	if autostart {
+		os.WriteFile(directory.ConfigDir+"./../autostart/SugarMateReader.desktop", []byte(strings.TrimSpace(`
+			#!/usr/bin/env xdg-open
+			[Desktop Entry]
+			Terminal=false
+			Type=Application
+			Name=SugarMateReader
+			Exec=SugarMateReader
+			Icon=SugarMateReader
+		`)), os.ModePerm)
+	} else {
+		err := os.Remove(directory.ConfigDir + "./../autostart/SugarMateReader.desktop")
+		if err != nil {
+			notify.Warning("ERROR!", "Failed to remove autostart config.")
+			return err
+		}
+	}
+
+	return nil
 }
 
 // setIcon sets the systray icon to the reading image.
