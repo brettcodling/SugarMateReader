@@ -27,6 +27,13 @@ var (
 )
 
 func init() {
+	if os.Getenv("DISABLE_SYSLOG") != "1" {
+		syslog, err := syslog.New(syslog.LOG_INFO, "SugarMateReader")
+		if err != nil {
+			log.Fatal("Unable to connect to syslog")
+		}
+		log.SetOutput(syslog)
+	}
 	files, err := assets.ReadDir("assets")
 	if err != nil {
 		log.Fatal(err)
@@ -42,66 +49,9 @@ func init() {
 
 func main() {
 	defer database.DB.Close()
-	if os.Getenv("DISABLE_SYSLOG") != "1" {
-		syslog, err := syslog.New(syslog.LOG_INFO, "SugarMateReader")
-		if err != nil {
-			log.Fatal("Unable to connect to syslog")
-		}
-		log.SetOutput(syslog)
-	}
 
 	systray.Run(func() {
-		lastUpdateMenuItem = systray.AddMenuItem("", "")
-		lastUpdateMenuItem.Disable()
-		goToUrl := systray.AddMenuItem("Open in browser", "")
-		login := systray.AddMenuItem("Login", "")
-		if _, err := os.Stat("/usr/local/bin/SugarMateReader"); err == nil {
-			checked := false
-			if _, err := os.Stat(directory.ConfigDir + "./../autostart/SugarMateReader.desktop"); err == nil {
-				checked = true
-			}
-			autostart := *systray.AddMenuItemCheckbox("Launch on start up", "", checked)
-			go func() {
-				for range autostart.ClickedCh {
-					if autostart.Checked() {
-						autostart.Uncheck()
-					} else {
-						autostart.Check()
-					}
-					err := setAutostart(autostart.Checked())
-					if err != nil {
-						log.Println("error:")
-						log.Println(err)
-						if autostart.Checked() {
-							autostart.Check()
-						} else {
-							autostart.Uncheck()
-						}
-					}
-				}
-			}()
-		}
-		settings := systray.AddMenuItem("Settings", "")
-		systray.AddSeparator()
-		quit := systray.AddMenuItem("Quit", "")
-		go func() {
-			for {
-				select {
-				case <-goToUrl.ClickedCh:
-					browser.OpenURL("https://app.sugarmate.io")
-				case <-login.ClickedCh:
-					go ui.OpenLogin()
-				case <-settings.ClickedCh:
-					go ui.OpenSettings()
-				case <-quit.ClickedCh:
-					systray.Quit()
-				case <-auth.LoginCh:
-					setIcon()
-				case <-ui.SettingsCh:
-					setIcon()
-				}
-			}
-		}()
+		setMenuItems()
 		setIcon()
 		if readings.LastUpdateTime == "" {
 			notify.Warning("ERROR!", "Couldn't get any readings")
@@ -164,4 +114,58 @@ func setIcon() {
 		}
 		lastUpdateMenuItem.SetTitle(fmt.Sprintf("Last updated: %s", lastUpdateTime.Format(time.TimeOnly)))
 	}
+}
+
+func setMenuItems() {
+	lastUpdateMenuItem = systray.AddMenuItem("", "")
+	lastUpdateMenuItem.Disable()
+	goToUrl := systray.AddMenuItem("Open in browser", "")
+	login := systray.AddMenuItem("Login", "")
+	if _, err := os.Stat("/usr/local/bin/SugarMateReader"); err == nil {
+		checked := false
+		if _, err := os.Stat(directory.ConfigDir + "./../autostart/SugarMateReader.desktop"); err == nil {
+			checked = true
+		}
+		autostart := *systray.AddMenuItemCheckbox("Launch on start up", "", checked)
+		go func() {
+			for range autostart.ClickedCh {
+				if autostart.Checked() {
+					autostart.Uncheck()
+				} else {
+					autostart.Check()
+				}
+				err := setAutostart(autostart.Checked())
+				if err != nil {
+					log.Println("error:")
+					log.Println(err)
+					if autostart.Checked() {
+						autostart.Check()
+					} else {
+						autostart.Uncheck()
+					}
+				}
+			}
+		}()
+	}
+	settings := systray.AddMenuItem("Settings", "")
+	systray.AddSeparator()
+	quit := systray.AddMenuItem("Quit", "")
+	go func() {
+		for {
+			select {
+			case <-goToUrl.ClickedCh:
+				browser.OpenURL("https://app.sugarmate.io")
+			case <-login.ClickedCh:
+				go ui.OpenLogin()
+			case <-settings.ClickedCh:
+				go ui.OpenSettings()
+			case <-quit.ClickedCh:
+				systray.Quit()
+			case <-auth.LoginCh:
+				setIcon()
+			case <-ui.SettingsCh:
+				setIcon()
+			}
+		}
+	}()
 }

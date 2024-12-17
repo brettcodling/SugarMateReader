@@ -79,55 +79,7 @@ func init() {
 		<-auth.LoginCh
 	}
 
-	Settings.Units = database.Get("UNIT")
-	if Settings.Units == "" {
-		Settings.Units = "mmol"
-	}
-	if Settings.Units == "mgdl" {
-		Settings.Format = "%.0f"
-	} else {
-		Settings.Format = "%.1f"
-	}
-	Settings.Alerts.LowEnabled = database.Get("LOW_ALERT_ENABLED")
-	Settings.Alerts.HighEnabled = database.Get("HIGH_ALERT_ENABLED")
-	Settings.Alerts.FastChangeEnabled = database.Get("FAST_CHANGE_ENABLED")
-	Settings.Alerts.Low = database.Get("LOW_ALERT")
-	if Settings.Alerts.Low == "" {
-		Settings.Alerts.Low = "4.0"
-		if Settings.Units == "mgdl" {
-			Settings.Alerts.Low = "72"
-		}
-	}
-	Settings.Alerts.High = database.Get("HIGH_ALERT")
-	if Settings.Alerts.High == "" {
-		Settings.Alerts.High = "12.0"
-		if Settings.Units == "mgdl" {
-			Settings.Alerts.High = "216"
-		}
-	}
-	Settings.Range.Low = database.Get("LOW_RANGE")
-	if Settings.Range.Low == "" {
-		Settings.Range.Low = "4.5"
-		if Settings.Units == "mgdl" {
-			Settings.Range.Low = "81"
-		}
-	}
-	Settings.Range.High = database.Get("HIGH_RANGE")
-	if Settings.Range.High == "" {
-		Settings.Range.High = "10.0"
-		if Settings.Units == "mgdl" {
-			Settings.Range.High = "180"
-		}
-	}
-	Settings.Alerts.FastChange = database.Get("FAST_CHANGE")
-	if Settings.Alerts.FastChange == "" {
-		Settings.Alerts.FastChange = "0.5"
-		if Settings.Units == "mgdl" {
-			Settings.Alerts.FastChange = "9"
-		}
-	}
-
-	SettingsCh = make(chan bool)
+	loadSettings()
 }
 
 func handleLogin(w http.ResponseWriter, req *http.Request) {
@@ -246,6 +198,58 @@ func handleSettings(w http.ResponseWriter, req *http.Request) {
 	}
 	t.Execute(w, settings)
 	return
+}
+
+func loadSettings() {
+	Settings.Units = database.Get("UNIT")
+	if Settings.Units == "" {
+		Settings.Units = "mmol"
+	}
+	if Settings.Units == "mgdl" {
+		Settings.Format = "%.0f"
+	} else {
+		Settings.Format = "%.1f"
+	}
+	Settings.Alerts.LowEnabled = database.Get("LOW_ALERT_ENABLED")
+	Settings.Alerts.HighEnabled = database.Get("HIGH_ALERT_ENABLED")
+	Settings.Alerts.FastChangeEnabled = database.Get("FAST_CHANGE_ENABLED")
+	Settings.Alerts.Low = database.Get("LOW_ALERT")
+	if Settings.Alerts.Low == "" {
+		Settings.Alerts.Low = "4.0"
+		if Settings.Units == "mgdl" {
+			Settings.Alerts.Low = "72"
+		}
+	}
+	Settings.Alerts.High = database.Get("HIGH_ALERT")
+	if Settings.Alerts.High == "" {
+		Settings.Alerts.High = "12.0"
+		if Settings.Units == "mgdl" {
+			Settings.Alerts.High = "216"
+		}
+	}
+	Settings.Range.Low = database.Get("LOW_RANGE")
+	if Settings.Range.Low == "" {
+		Settings.Range.Low = "4.5"
+		if Settings.Units == "mgdl" {
+			Settings.Range.Low = "81"
+		}
+	}
+	Settings.Range.High = database.Get("HIGH_RANGE")
+	if Settings.Range.High == "" {
+		Settings.Range.High = "10.0"
+		if Settings.Units == "mgdl" {
+			Settings.Range.High = "180"
+		}
+	}
+	Settings.Alerts.FastChange = database.Get("FAST_CHANGE")
+	if Settings.Alerts.FastChange == "" {
+		Settings.Alerts.FastChange = "0.5"
+		if Settings.Units == "mgdl" {
+			Settings.Alerts.FastChange = "9"
+		}
+	}
+
+	SettingsCh = make(chan bool)
 }
 
 // OpenLogin will open the login window

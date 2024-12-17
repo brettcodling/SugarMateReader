@@ -15,10 +15,6 @@ import (
 	"github.com/fogleman/gg"
 )
 
-var (
-	highLastValue bool
-)
-
 // BuildImage builds the entire reading image which is used as the systray icon.
 func BuildImage(value int, trend string, delta int) []byte {
 	fullContext := gg.NewContext(180, 50)
@@ -153,30 +149,13 @@ func getImageValue(value int) (image.Image, error) {
 	if ui.Settings.Units == "mmol" {
 		floatValue = floatValue / 18
 	}
-	if ui.Settings.Alerts.LowEnabled == "true" {
-		lowAlertLevel, err := strconv.ParseFloat(ui.Settings.Alerts.Low, 64)
-		if err != nil {
-			return nil, err
-		}
-		if lowAlertLevel > 0 && floatValue <= lowAlertLevel {
-			notify.Warning("ALERT!", "LOW GLUCOSE")
-		}
+	err := notify.AlertLow(ui.Settings.Alerts.LowEnabled == "true", floatValue, ui.Settings.Alerts.Low)
+	if err != nil {
+		return nil, err
 	}
-	if ui.Settings.Alerts.HighEnabled == "true" {
-		if !highLastValue {
-			highAlertLevel, err := strconv.ParseFloat(ui.Settings.Alerts.High, 64)
-			if err != nil {
-				return nil, err
-			}
-			if highAlertLevel > 0 && floatValue >= highAlertLevel {
-				highLastValue = true
-				notify.Warning("ALERT!", "HIGH GLUCOSE")
-			} else {
-				highLastValue = false
-			}
-		}
-	} else {
-		highLastValue = false
+	err = notify.AlertHigh(ui.Settings.Alerts.HighEnabled == "true", floatValue, ui.Settings.Alerts.High)
+	if err != nil {
+		return nil, err
 	}
 
 	red := 0.0
