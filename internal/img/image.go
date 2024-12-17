@@ -95,6 +95,13 @@ func getImageDelta(delta int) (image.Image, error) {
 	if math.Abs(change) >= fastChange {
 		green = 0
 		blue = 0
+		if ui.Settings.Alerts.FastChangeEnabled == "true" {
+			if change > 0 {
+				notify.Warning("ALERT!", "RISING FAST")
+			} else {
+				notify.Warning("ALERT!", "FALLING FAST")
+			}
+		}
 	}
 
 	context := getImageContext(fmt.Sprintf(ui.Settings.Format, change), "roboto", 26, red, green, blue)
@@ -115,14 +122,12 @@ func getImageTrend(trend string) (image.Image, error) {
 		trend = "↗"
 	case strings.Contains(trend, "DOUBLE_UP"):
 		trend = "↑↑"
-		notify.Warning("ALERT!", "RISING FAST")
 	case strings.Contains(trend, "UP"):
 		trend = "↑"
 	case strings.Contains(trend, "FORTY_FIVE_DOWN"):
 		trend = "↘"
 	case strings.Contains(trend, "DOUBLE_DOWN"):
 		trend = "↓↓"
-		notify.Warning("ALERT!", "FALLING FAST")
 	case strings.Contains(trend, "DOWN"):
 		trend = "↓"
 	case strings.Contains(trend, "FLAT"):
