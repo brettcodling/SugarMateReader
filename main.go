@@ -9,14 +9,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/brettcodling/SugarMateReader/pkg/auth"
-	"github.com/brettcodling/SugarMateReader/pkg/database"
-	"github.com/brettcodling/SugarMateReader/pkg/directory"
-	"github.com/brettcodling/SugarMateReader/pkg/img"
-	"github.com/brettcodling/SugarMateReader/pkg/notify"
-	"github.com/brettcodling/SugarMateReader/pkg/readings"
-	"github.com/brettcodling/SugarMateReader/pkg/systray"
-	"github.com/brettcodling/SugarMateReader/pkg/ui"
+	"github.com/brettcodling/SugarMateReader/internal/auth"
+	"github.com/brettcodling/SugarMateReader/internal/database"
+	"github.com/brettcodling/SugarMateReader/internal/directory"
+	"github.com/brettcodling/SugarMateReader/internal/notify"
+	"github.com/brettcodling/SugarMateReader/internal/readings"
+	"github.com/brettcodling/SugarMateReader/internal/systray"
+	"github.com/brettcodling/SugarMateReader/internal/ui"
 	"github.com/go-co-op/gocron"
 	"github.com/pkg/browser"
 )
@@ -98,7 +97,7 @@ func main() {
 					systray.Quit()
 				case <-auth.LoginCh:
 					setIcon()
-				case <-img.SettingsCh:
+				case <-ui.SettingsCh:
 					setIcon()
 				}
 			}

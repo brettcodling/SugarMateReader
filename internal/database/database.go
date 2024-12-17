@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/boltdb/bolt"
-	"github.com/brettcodling/SugarMateReader/pkg/directory"
+	"github.com/brettcodling/SugarMateReader/internal/directory"
 )
 
 var DB *bolt.DB

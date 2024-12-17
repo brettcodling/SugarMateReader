@@ -10,16 +10,12 @@ import (
 
 	_ "embed"
 
-	"github.com/brettcodling/SugarMateReader/pkg/database"
-	"github.com/brettcodling/SugarMateReader/pkg/notify"
+	"github.com/brettcodling/SugarMateReader/internal/database"
+	"github.com/brettcodling/SugarMateReader/internal/notify"
 	keyring "github.com/zalando/go-keyring"
 )
 
 var (
-	//go:embed close.tmpl
-	closeTmpl string
-	//go:embed login.tmpl
-	loginTmpl       string
 	Email, Password string
 	LoginCh         chan bool
 	Token           TokenResponse
