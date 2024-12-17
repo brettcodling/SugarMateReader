@@ -25,8 +25,8 @@ var (
 	loginTmpl string
 	//go:embed settings.tmpl
 	settingsTmpl string
+	RefreshCh    chan bool
 	Settings     Setting
-	SettingsCh   chan bool
 	url          string
 )
 
@@ -80,6 +80,8 @@ func init() {
 	}
 
 	loadSettings()
+
+	RefreshCh = make(chan bool)
 }
 
 func handleLogin(w http.ResponseWriter, req *http.Request) {
@@ -112,7 +114,7 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 		}
 		database.Set("EMAIL", auth.Email)
 		go func() {
-			auth.LoginCh <- true
+			RefreshCh <- true
 		}()
 		t, err := template.New("Logged In").Parse(closeTmpl)
 		if err != nil {
@@ -184,7 +186,7 @@ func handleSettings(w http.ResponseWriter, req *http.Request) {
 		}
 		saved = true
 		go func() {
-			SettingsCh <- true
+			RefreshCh <- true
 		}()
 	}
 	settings := Settings
@@ -197,7 +199,6 @@ func handleSettings(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	t.Execute(w, settings)
-	return
 }
 
 func loadSettings() {
@@ -248,8 +249,6 @@ func loadSettings() {
 			Settings.Alerts.FastChange = "9"
 		}
 	}
-
-	SettingsCh = make(chan bool)
 }
 
 // OpenLogin will open the login window

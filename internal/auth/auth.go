@@ -17,7 +17,6 @@ import (
 
 var (
 	Email, Password string
-	LoginCh         chan bool
 	Token           TokenResponse
 )
 
@@ -32,7 +31,6 @@ func init() {
 		AccessToken: os.Getenv("TOKEN"),
 	}
 
-	LoginCh = make(chan bool)
 	Email = database.Get("EMAIL")
 }
 
@@ -62,8 +60,19 @@ func GetAuth() {
 
 		return
 	}
+	parseTokenBody(resp)
+}
+
+func parseTokenBody(resp *http.Response) {
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		notify.Warning("ERROR!", "Failed Auth")
+		log.Println("error:")
+		log.Println(err)
+
+		return
+	}
 	if resp.StatusCode != http.StatusOK {
 		notify.Warning("ERROR!", "Failed Auth")
 		log.Println("error:")
@@ -86,14 +95,5 @@ func refreshToken() {
 
 		return
 	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if resp.StatusCode != http.StatusOK {
-		notify.Warning("ERROR!", "Failed Auth")
-		log.Println("error:")
-		log.Println("Failed Auth.")
-
-		return
-	}
-	json.Unmarshal(body, &Token)
+	parseTokenBody(resp)
 }

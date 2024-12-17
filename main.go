@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/brettcodling/SugarMateReader/internal/auth"
 	"github.com/brettcodling/SugarMateReader/internal/database"
 	"github.com/brettcodling/SugarMateReader/internal/directory"
 	"github.com/brettcodling/SugarMateReader/internal/notify"
@@ -161,9 +160,7 @@ func setMenuItems() {
 				go ui.OpenSettings()
 			case <-quit.ClickedCh:
 				systray.Quit()
-			case <-auth.LoginCh:
-				setIcon()
-			case <-ui.SettingsCh:
+			case <-ui.RefreshCh:
 				setIcon()
 			}
 		}
