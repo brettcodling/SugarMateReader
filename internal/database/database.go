@@ -3,8 +3,8 @@ package database
 import (
 	"log"
 
-	"github.com/boltdb/bolt"
 	"github.com/brettcodling/SugarMateReader/internal/directory"
+	bolt "go.etcd.io/bbolt"
 )
 
 var DB *bolt.DB

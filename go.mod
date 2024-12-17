@@ -3,13 +3,13 @@ module github.com/brettcodling/SugarMateReader
 go 1.23
 
 require (
-	github.com/boltdb/bolt v1.3.1
 	github.com/fogleman/gg v1.3.0
 	github.com/gen2brain/beeep v0.0.0-20240516210008-9c006672e7f4
-	github.com/getlantern/golog v0.0.0-20230503153817-8e72de7e0a65
+	github.com/getlantern/systray v1.2.2
 	github.com/go-co-op/gocron v1.37.0
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/zalando/go-keyring v0.2.6
+	go.etcd.io/bbolt v1.3.11
 )
 
 require (
@@ -17,6 +17,7 @@ require (
 	github.com/danieljoos/wincred v1.2.2 // indirect
 	github.com/getlantern/context v0.0.0-20220418194847-3d5e7a086201 // indirect
 	github.com/getlantern/errors v1.0.4 // indirect
+	github.com/getlantern/golog v0.0.0-20230503153817-8e72de7e0a65 // indirect
 	github.com/getlantern/hex v0.0.0-20220104173244-ad7e4b9194dc // indirect
 	github.com/getlantern/hidden v0.0.0-20220104173330-f221c5a24770 // indirect
 	github.com/getlantern/ops v0.0.0-20231025133620-f368ab734534 // indirect

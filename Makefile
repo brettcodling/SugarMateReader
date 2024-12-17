@@ -9,11 +9,14 @@ Icon=SugarMateReader
 endef
 
 build:
-	go build -o ./SugarMateReader .
+ifeq ($(OS),Windows_NT)
+		go build -ldflags -H=windowsgui .
+else
+		go build .
+endif
 
 export DESKTOPFILE
 install:
-	/usr/local/go/bin/go build -o ./SugarMateReader .
 	cp SugarMateReader /usr/local/bin
 	echo "$$DESKTOPFILE" > /usr/share/applications/SugarMateReader.desktop
 	chmod +x /usr/share/applications/SugarMateReader.desktop

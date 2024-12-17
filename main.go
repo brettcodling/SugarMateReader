@@ -14,8 +14,8 @@ import (
 	"github.com/brettcodling/SugarMateReader/internal/directory"
 	"github.com/brettcodling/SugarMateReader/internal/notify"
 	"github.com/brettcodling/SugarMateReader/internal/readings"
-	"github.com/brettcodling/SugarMateReader/internal/systray"
 	"github.com/brettcodling/SugarMateReader/internal/ui"
+	"github.com/getlantern/systray"
 	"github.com/go-co-op/gocron"
 	"github.com/pkg/browser"
 )
