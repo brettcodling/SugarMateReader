@@ -9,9 +9,9 @@ import (
 	"slices"
 	"time"
 
-	"github.com/brettcodling/SugarMateReader/pkg/auth"
-	"github.com/brettcodling/SugarMateReader/pkg/img"
-	"github.com/brettcodling/SugarMateReader/pkg/notify"
+	"github.com/brettcodling/SugarMateReader/internal/auth"
+	"github.com/brettcodling/SugarMateReader/internal/img"
+	"github.com/brettcodling/SugarMateReader/internal/notify"
 )
 
 var LastUpdateTime string

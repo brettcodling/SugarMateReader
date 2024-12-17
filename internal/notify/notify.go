@@ -1,7 +1,7 @@
 package notify
 
 import (
-	"github.com/brettcodling/SugarMateReader/pkg/directory"
+	"github.com/brettcodling/SugarMateReader/internal/directory"
 	"github.com/gen2brain/beeep"
 )
 
