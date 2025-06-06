@@ -22,7 +22,7 @@ func GetReading(retry bool, before, after string) []byte {
 		before = time.Now().Format(time.RFC3339Nano)
 	}
 	if after == "" {
-		after = time.Now().Add(-10 * time.Minute).Format(time.RFC3339Nano)
+		after = time.Now().Add(-120 * time.Minute).Format(time.RFC3339Nano)
 	}
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(
 		"https://api.sugarmate.io/api/v3/events?before=%s&after=%s",
@@ -63,6 +63,7 @@ func GetReading(retry bool, before, after string) []byte {
 
 		return []byte{}
 	}
+	log.Println(string(body))
 	reading, err := parseReading(body)
 	if err != nil {
 		notify.Warning("ERROR!", err.Error())
