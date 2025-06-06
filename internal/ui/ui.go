@@ -69,14 +69,14 @@ func init() {
 		if err != nil {
 			notify.Warning("ERROR!", err.Error())
 			OpenLogin()
-			<-auth.LoginCh
+			<-RefreshCh
 		} else if auth.Password == "" {
 			OpenLogin()
-			<-auth.LoginCh
+			<-RefreshCh
 		}
 	} else {
 		OpenLogin()
-		<-auth.LoginCh
+		<-RefreshCh
 	}
 
 	loadSettings()

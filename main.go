@@ -105,13 +105,13 @@ func setIcon() {
 	reading := readings.GetReading(true, "", "")
 	if len(reading) > 0 {
 		systray.SetIcon(reading)
-		lastUpdateTime, err := time.Parse(time.RFC3339Nano, readings.LastUpdateTime)
+		lastUpdateTime, err := time.ParseInLocation(time.RFC3339Nano, readings.LastUpdateTime, time.UTC)
 		if err != nil {
 			log.Println(err)
 			notify.Warning("ERROR!", "Failed to parse last update time")
 			return
 		}
-		lastUpdateMenuItem.SetTitle(fmt.Sprintf("Last updated: %s", lastUpdateTime.Format(time.TimeOnly)))
+		lastUpdateMenuItem.SetTitle(fmt.Sprintf("Last updated: %s", lastUpdateTime.Local().Format(time.TimeOnly)))
 	}
 }
 
